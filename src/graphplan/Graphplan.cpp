@@ -45,6 +45,16 @@ using std::endl;
 using std::set;
 using std::vector;
 
+graphplan::Goal::Goal(const Proposition& p, const bool& d) :
+  prop(p), del(d)
+{
+}
+
+bool graphplan::Goal::operator<(const Goal& g) const
+{
+  return prop < g.prop;
+}
+
 graphplan::Graphplan::Graphplan()
 {
 }
@@ -64,9 +74,9 @@ graphplan::Graphplan::add_starting(const Proposition& p)
 }
 
 void
-graphplan::Graphplan::add_goal(const Proposition& p)
+graphplan::Graphplan::add_goal(const Proposition& p, const bool& deleted)
 {
-  goals_.insert(p);
+  goals_.insert(Goal(p, deleted));
 }
 
 void
@@ -87,7 +97,7 @@ graphplan::Graphplan::get_actions() const
   return actions_;
 }
 
-const set<graphplan::Proposition>&
+const set<graphplan::Goal>&
 graphplan::Graphplan::get_goals() const
 {
   return goals_;
@@ -140,7 +150,7 @@ graphplan::Graphplan::to_string() const
 
   ret << "Goal Propositions:" << endl;
   for(auto it = goals_.cbegin(); it != goals_.cend(); ++it)
-    ret << "\t" << it->get_name() << endl;
+    ret << "\t" << it->prop.get_name() << (it->del ? " deleted" : "") << endl;
 
   ret << "Actions:" << endl;
   for(auto it = actions_.cbegin(); it != actions_.cend(); ++it)
@@ -218,13 +228,14 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props) const
 {
   // foreach goal proposition
   set<Proposition_Node*> found_goals;
-  for(auto goal = goals_.cbegin(); goal != goals_.cend(); ++goal)
+  for(set<Goal>::const_iterator goal = goals_.cbegin(); goal != goals_.cend();
+    ++goal)
   {
     // search for goal in propositions
     set<Proposition_Node*>::const_iterator it;
     for(it = props.cbegin(); it != props.cend(); ++it)
     {
-      if((*it)->instance_of(*goal) && (!(*it)->is_deleted()))
+      if((*it)->instance_of(goal->prop) && ((*it)->is_deleted() == goal->del))
         break;
     }
 

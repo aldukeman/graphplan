@@ -42,6 +42,17 @@
 
 namespace graphplan
 {
+  /// goal type
+  struct Goal
+  {
+    Goal(const Proposition& p, const bool& d);
+
+    bool operator<(const Goal& g) const;
+
+    Proposition prop;
+    bool del;
+  };
+
   class Graphplan
   {
   public:
@@ -55,7 +66,7 @@ namespace graphplan
     void add_starting(const Proposition& p);
 
     /// add goal propositions
-    void add_goal(const Proposition& p);
+    void add_goal(const Proposition& p, const bool& deleted = false);
 
     /// add possible action
     void add_action(const Action& a);
@@ -67,7 +78,7 @@ namespace graphplan
     const std::set<Action>& get_actions() const;
 
     /// get goals
-    const std::set<Proposition>& get_goals() const;
+    const std::set<Goal>& get_goals() const;
 
     /// find plan
     unsigned int plan(unsigned int iterations = 5);
@@ -110,7 +121,7 @@ namespace graphplan
     std::set<Proposition> starting_;
 
     /// goal propositions
-    std::set<Proposition> goals_;
+    std::set<Goal> goals_;
 
     /// available actions
     std::set<Action> actions_;
