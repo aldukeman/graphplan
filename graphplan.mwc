@@ -1,0 +1,11 @@
+workspace {
+  cmdline += -value_template obj_dir=.obj/
+  cmdline += -value_template compile_flags+=-std=c++11
+  cmdline += -value_template compile_flags+=-Wall
+  cmdline += -value_template compile_flags+=-Wextra
+  cmdline += -value_template compile_flags+=-pedantic
+  cmdline += -value_template ldlibs=""
+
+  graphplan.mpc
+  testing.mpc
+}

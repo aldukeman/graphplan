@@ -1,0 +1,13 @@
+project(test_graphplan) {
+  exeout = bin
+  exename = test_graphplan
+
+  libpaths += lib
+  after += libgraphplan
+  libs += graphplan
+  includes += include
+
+  Source_Files {
+    src/test
+  }
+}

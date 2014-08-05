@@ -1,0 +1,11 @@
+project (libgraphplan) {
+  libout = lib
+  sharedname = graphplan
+  includes += include
+
+  Source_Files {
+    Graphplan {
+      src/graphplan
+    }
+  }
+}
