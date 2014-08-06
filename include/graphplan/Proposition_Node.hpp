@@ -45,7 +45,7 @@ namespace graphplan
   {
   public:
     /// Create instance of proposition
-    Proposition_Node(const Proposition& p, const bool d = false);
+    Proposition_Node(const Proposition& p);
 
     /// Copy Constructor
     Proposition_Node(const Proposition_Node& p);
@@ -57,7 +57,7 @@ namespace graphplan
     void add_cause(Action_Node* a);
 
     /// add another mutex node
-    void add_mutex(Proposition_Node* p);
+    void add_mutex(const Proposition_Node* p);
 
     /// get proposition name
     std::string get_name() const;
@@ -72,20 +72,17 @@ namespace graphplan
     const std::set<Action_Node*>& get_cause() const;
 
     /// get proposition nodes this node is mutex with
-    const std::set<Proposition_Node*>& get_mutex() const;
-
-    /// get deleted
-    bool is_deleted() const;
+    const std::set<const Proposition_Node*>& get_mutex() const;
 
     /// determine if this is a proposition
     bool instance_of(const Proposition& p) const;
 
+    /// get string representation
+    std::string to_string() const;
+
   protected:
     /// name of the proposition
     Proposition proposition_;
-
-    /// deleted?
-    bool deleted_;
 
     /// action nodes this proposition is a precondition of
     std::set<Action_Node*> supply_;
@@ -94,7 +91,7 @@ namespace graphplan
     std::set<Action_Node*> causes_;
 
     /// mutex propositions
-    std::set<Proposition_Node*> mutex_;
+    std::set<const Proposition_Node*> mutex_;
   }; // class Proposition_Node
 } // namespace graphplan
 

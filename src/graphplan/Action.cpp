@@ -55,15 +55,9 @@ graphplan::Action::operator<(const Action& a) const
 }
 
 void
-graphplan::Action::add_add(const Proposition& p)
+graphplan::Action::add_effect(const Proposition& p)
 {
-  adds_.insert(p);
-}
-
-void
-graphplan::Action::add_delete(const Proposition& p)
-{
-  deletes_.insert(p);
+  effects_.insert(p);
 }
 
 void
@@ -79,15 +73,9 @@ graphplan::Action::get_name() const
 }
 
 const set<graphplan::Proposition>&
-graphplan::Action::get_adds() const
+graphplan::Action::get_effects() const
 {
-  return adds_;
-}
-
-const set<graphplan::Proposition>&
-graphplan::Action::get_deletes() const
-{
-  return deletes_;
+  return effects_;
 }
 
 const set<graphplan::Proposition>&
@@ -103,16 +91,12 @@ graphplan::Action::to_string() const
   ret << "Action: " << name_ << endl;
 
   ret << "\tPreconditions:" << endl;
-  for(auto it = preconditions_.cbegin(); it != preconditions_.end(); ++it)
-    ret << "\t\t" << it->get_name() << endl;
+  for(const Proposition& pre : preconditions_)
+    ret << "\t\t" << pre.to_string() << endl;
 
-  ret << "\tAdd:" << endl;
-  for(auto it = adds_.cbegin(); it != adds_.end(); ++it)
-    ret << "\t\t" << it->get_name() << endl;
-
-  ret << "\tDelete:" << endl;
-  for(auto it = deletes_.cbegin(); it != deletes_.end(); ++it)
-    ret << "\t\t" << it->get_name() << endl;
+  ret << "\tEffects:" << endl;
+  for(const Proposition& effect : effects_)
+    ret << "\t\t" << effect.to_string() << endl;
 
   return ret.str();
 }

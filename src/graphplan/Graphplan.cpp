@@ -33,6 +33,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <queue>
 
 #include "graphplan/Proposition.hpp"
 #include "graphplan/Action.hpp"
@@ -43,7 +44,7 @@ using std::string;
 using std::stringstream;
 using std::endl;
 using std::set;
-using std::vector;
+using std::queue;
 
 graphplan::Goal::Goal(const Proposition& p, const bool& d) :
   prop(p), del(d)
@@ -68,9 +69,9 @@ graphplan::Graphplan::~Graphplan()
 }
 
 void
-graphplan::Graphplan::add_starting(const Proposition& p)
+graphplan::Graphplan::add_starting(const Proposition& p, const bool& deleted)
 {
-  starting_.insert(p);
+  starting_.insert(Starting(p, deleted));
 }
 
 void
@@ -85,7 +86,7 @@ graphplan::Graphplan::add_action(const Action& a)
   actions_.insert(a);
 }
 
-const set<graphplan::Proposition>&
+const set<graphplan::Starting>&
 graphplan::Graphplan::get_starting() const
 {
   return starting_;
@@ -107,27 +108,36 @@ unsigned int
 graphplan::Graphplan::plan(unsigned int iterations)
 {
   // init proposition nodes
+  cout << "Initial nodes:" << endl;
   set<Proposition_Node*> props;
-  for(auto it = starting_.cbegin(); it != starting_.cend(); ++it)
+  for(set<Starting>::iterator it = starting_.cbegin(); it != starting_.cend();
+    ++it)
   {
-    Proposition_Node* p = new Proposition_Node(it->get_name());
+    Proposition_Node* p = new Proposition_Node(it->prop);
     prop_nodes_.insert(p);
     props.insert(p);
+    cout << "\t" << p->to_string() << endl;
   }
 
   // while not at goal, perform another iteration
   unsigned int iter;
-  for(iter = 0; iter < iterations && !goal_check(props); ++iter)
+  set<Action_Node*> actions;
+  for(iter = 0; iter < iterations && !goal_check(props, actions); ++iter)
   {
+    cout << "iteration: " << iter << endl;
+
     set<Proposition_Node*> new_props;
     set<Action_Node*> new_acts;
     iteration(props, new_props, new_acts);
 
+    // store proposition nodes for later deletion
     for(set<Proposition_Node*>::const_iterator it = new_props.cbegin();
       it != new_props.cend(); ++it)
     {
       prop_nodes_.insert(*it);
     }
+
+    // store action nodes for later deletion
     for(set<Action_Node*>::const_iterator it = new_acts.cbegin();
       it != new_acts.cend(); ++it)
     {
@@ -146,7 +156,7 @@ graphplan::Graphplan::to_string() const
   stringstream ret;
   ret << "Starting Propositions:" << endl;
   for(auto it = starting_.cbegin(); it != starting_.cend(); ++it)
-    ret << "\t" << it->get_name() << endl;
+    ret << "\t" << it->prop.get_name() << (it->del ? " deleted" : "") << endl;
 
   ret << "Goal Propositions:" << endl;
   for(auto it = goals_.cbegin(); it != goals_.cend(); ++it)
@@ -159,15 +169,11 @@ graphplan::Graphplan::to_string() const
     ret << "\t\tPreconditions:" << endl;
     auto vec1 = it->get_preconditions();
     for(auto it2 = vec1.cbegin(); it2 != vec1.cend(); ++it2)
-      ret << "\t\t\t" << it2->get_name() << endl;
-    ret << "\t\tAdds:" << endl;
-    auto vec2 = it->get_adds();
+      ret << "\t\t\t" << it2->to_string() << endl;
+    ret << "\t\tEffects:" << endl;
+    auto vec2 = it->get_effects();
     for(auto it2 = vec2.cbegin(); it2 != vec2.cend(); ++it2)
-      ret << "\t\t\t" << it2->get_name() << endl;
-    ret << "\t\tDeletes:" << endl;
-    auto vec3 = it->get_deletes();
-    for(auto it2 = vec3.cbegin(); it2 != vec3.cend(); ++it2)
-      ret << "\t\t\t" << it2->get_name() << endl;
+      ret << "\t\t\t" << it2->to_string() << endl;
   }
 
   return ret.str();
@@ -177,17 +183,31 @@ void
 graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
   set<Proposition_Node*>& new_props, set<Action_Node*>& new_actions)
 {
+  // handle maintenance actions
   // copy each of the nodes
-  for(set<Proposition_Node*>::const_iterator it = props.cbegin();
+  for(set<Proposition_Node*>::iterator it = props.cbegin();
     it != props.cend(); ++it)
   {
-    new_props.insert(new Proposition_Node(**it));
+    Proposition p = (*it)->get_proposition();
+    Proposition_Node* pn = new Proposition_Node(p);
+    Action maintenance;
+    maintenance.add_precondition(p);
+    maintenance.add_effect(p);
+    Action_Node* maint = new Action_Node("maintenance_" + (*it)->get_name());
+    maint->add_precondition(*it);
+    maint->add_effect(pn);
+    pn->add_cause(maint);
+    make_action_mutex_connections(new_actions, maint);
+    new_props.insert(pn);
+    new_actions.insert(maint);
   }
 
   // foreach action
   for(set<Action>::const_iterator action = actions_.cbegin();
     action != actions_.cend(); ++action)
   {
+    cout << "checking action " << action->get_name() << endl;
+
     // foreach precondition
     const set<Proposition>& preconds = action->get_preconditions();
     bool good = true;
@@ -200,7 +220,7 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
       for(set<Proposition_Node*>::const_iterator prop = props.cbegin();
         prop != props.cend() && !good; ++prop)
       {
-        good = (*prop)->instance_of(*precond) && (!(*prop)->is_deleted());
+        good = (*prop)->instance_of(*precond);
         if(good)
           found_precond.insert(*prop);
       }
@@ -209,11 +229,11 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
     // if all preconditions are present and not mutex
     if(good && !(is_mutex(found_precond)))
     {
+      cout << "\tadding action" << endl;
       // create action node and add result nodes
       Action_Node* an = new Action_Node(*action);
       connect_preconditions(found_precond, an);
-      connect_added_nodes(*action, new_props, an);
-      connect_deleted_nodes(*action, new_props, an);
+      connect_effect_nodes(*action, new_props, an);
       make_action_mutex_connections(new_actions, an);
 
       new_actions.insert(an);
@@ -221,10 +241,23 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
   }
 
   make_proposition_mutex_connections(new_props);
+
+  cout << "propositions:" << endl;
+  for(auto it = new_props.cbegin(); it != new_props.cend(); ++it)
+  {
+    cout << "\t" << (*it)->to_string() << endl;
+    auto mutex = (*it)->get_mutex();
+    cout << "\t\tmutex:" << endl;
+    for(auto mut = mutex.cbegin(); mut != mutex.cend(); ++mut)
+    {
+      cout << "\t\t\t" << (*mut)->to_string() << endl;
+    }
+  }
 }
 
 bool
-graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props) const
+graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
+  set<Action_Node*>& actions) const
 {
   // foreach goal proposition
   set<Proposition_Node*> found_goals;
@@ -235,7 +268,7 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props) const
     set<Proposition_Node*>::const_iterator it;
     for(it = props.cbegin(); it != props.cend(); ++it)
     {
-      if((*it)->instance_of(goal->prop) && ((*it)->is_deleted() == goal->del))
+      if((*it)->instance_of(goal->prop))
         break;
     }
 
@@ -248,7 +281,15 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props) const
   }
 
   // ensure no mutex
-  return !(is_mutex(found_goals));
+  if(!(is_mutex(found_goals)))
+  {
+    // produce queue of proposition nodes to find actions for
+    queue<Proposition_Node*> sub_goals;
+    for(Proposition_Node* p : found_goals)
+      sub_goals.push(p);
+  }
+
+  return false;
 }
 
 bool
@@ -282,18 +323,18 @@ graphplan::Graphplan::connect_preconditions(
 }
 
 void
-graphplan::Graphplan::connect_added_nodes(const Action& action, 
+graphplan::Graphplan::connect_effect_nodes(const Action& action, 
   set<Proposition_Node*>& new_props, Action_Node* an)
 {
-  const set<Proposition>& added = action.get_adds();
-  for(set<Proposition>::const_iterator add = added.cbegin();
-    add != added.cend(); ++add)
+  const set<Proposition>& effects = action.get_effects();
+  for(set<Proposition>::const_iterator effect = effects.cbegin();
+    effect != effects.cend(); ++effect)
   {
     // check if proposition is already added
     set<Proposition_Node*>::const_iterator pro;
     for(pro = new_props.cbegin(); pro != new_props.cend(); ++pro)
     {
-      if((*pro)->instance_of(*add) && !(*pro)->is_deleted())
+      if((*pro)->instance_of(*effect))
         break;
     }
 
@@ -301,46 +342,14 @@ graphplan::Graphplan::connect_added_nodes(const Action& action,
     if(pro != new_props.cend())
     {
       (*pro)->add_cause(an);
-      an->add_add(*pro);
+      an->add_effect(*pro);
     }
     else
     {
-      Proposition_Node* p = new Proposition_Node(*add, false);
-      p->add_cause(an);
+      Proposition_Node* p = new Proposition_Node(*effect);
       new_props.insert(p);
-      an->add_add(p);
-    }
-  }
-}
-
-void
-graphplan::Graphplan::connect_deleted_nodes(const Action& action, 
-  set<Proposition_Node*>& new_props, Action_Node* an)
-{
-  const set<Proposition>& added = action.get_adds();
-  for(set<Proposition>::const_iterator add = added.cbegin();
-    add != added.cend(); ++add)
-  {
-    // check if proposition is already added
-    set<Proposition_Node*>::const_iterator pro;
-    for(pro = new_props.cbegin(); pro != new_props.cend(); ++pro)
-    {
-      if((*pro)->instance_of(*add) && (*pro)->is_deleted())
-        break;
-    }
-
-    // if already in ret set, then just connect to node
-    if(pro != new_props.cend())
-    {
-      an->add_add(*pro);
-      (*pro)->add_cause(an);
-    }
-    else
-    {
-      Proposition_Node* p = new Proposition_Node(*add, true);
       p->add_cause(an);
-      new_props.insert(p);
-      an->add_add(p);
+      an->add_effect(p);
     }
   }
 }
@@ -349,48 +358,59 @@ void
 graphplan::Graphplan::make_action_mutex_connections(
   set<Action_Node*>& new_actions, Action_Node* an)
 {
-  // foreach other action
-  for(set<Action_Node*>::iterator other_action = new_actions.begin();
-    other_action != new_actions.end(); ++other_action)
+  // foreach other actions
+  for(Action_Node* other_action : new_actions)
   {
+    const set<Proposition_Node*>& my_effects = an->get_effects();
+    const set<const Proposition_Node*>& my_preconditions =
+      an->get_preconditions();
+    const set<Proposition_Node*>& other_effects = other_action->get_effects();
+    const set<const Proposition_Node*>& other_preconditions = 
+      other_action->get_preconditions();
     /**
      * case 1: inconsistent effects - an action adds a proposition effect
-     *         that another action deletes
+     *         that another action deletes or is negation of
      */
-    const set<Proposition_Node*>& my_adds = an->get_adds();
-    const set<Proposition_Node*>& other_deletes =
-      (*other_action)->get_deletes();
-    for(set<Proposition_Node*>::const_iterator add = my_adds.cbegin();
-      add != my_adds.cend(); ++add)
+    cout << "check for inconsistent effects with " << other_action->get_name() << endl;
+    for(const Proposition_Node* mine : my_effects)
     {
-      for(set<Proposition_Node*>::const_iterator del = other_deletes.cbegin();
-        del != other_deletes.cend(); ++del)
+      for(const Proposition_Node* other : other_effects)
       {
-        if((*add)->instance_of((*del)->get_proposition()))
+        if(mine->get_proposition().is_negation_of(other->get_proposition()))
         {
-          (*other_action)->add_mutex(an);
-          an->add_mutex(*other_action);
+          other_action->add_mutex(an);
+          an->add_mutex(other_action);
+          cout << "\tfound" << endl;
         }
       }
     }
 
     /**
-     * case 2: interference - an action deletes a proposition effect that
-     *         another action adds
+     * case 2: interference - an action deletes a preconditon that another 
+     *         action needs
      */
-    const set<Proposition_Node*>& my_dels = an->get_deletes();
-    const set<Proposition_Node*>& other_adds =
-      (*other_action)->get_adds();
-    for(set<Proposition_Node*>::const_iterator add = my_dels.cbegin();
-      add != my_dels.cend(); ++add)
+    cout << "check for interference with " << other_action->get_name() << endl;
+    for(const Proposition_Node* mine : my_preconditions)
     {
-      for(set<Proposition_Node*>::const_iterator del = other_adds.cbegin();
-        del != other_adds.cend(); ++del)
+      for(const Proposition_Node* other : other_effects)
       {
-        if((*add)->instance_of((*del)->get_proposition()))
+        if(mine->get_proposition().is_negation_of(other->get_proposition()))
         {
-          (*other_action)->add_mutex(an);
-          an->add_mutex(*other_action);
+          other_action->add_mutex(an);
+          an->add_mutex(other_action);
+          cout << "\tfound" << endl;
+        }
+      }
+    }
+    for(const Proposition_Node* mine : my_effects)
+    {
+      for(const Proposition_Node* other : other_preconditions)
+      {
+        if(mine->get_proposition().is_negation_of(other->get_proposition()))
+        {
+          other_action->add_mutex(an);
+          an->add_mutex(other_action);
+          cout << "\tfound" << endl;
         }
       }
     }
@@ -399,30 +419,17 @@ graphplan::Graphplan::make_action_mutex_connections(
      * case 3: competing needs - an action has preconditions that are mutex with
      *         another actions preconditions
      */
-    const set<Proposition_Node*>& my_pre = an->get_preconditions();
-    const set<Proposition_Node*>& other_pre =
-      (*other_action)->get_preconditions();
-    for(set<Proposition_Node*>::const_iterator mine = my_pre.cbegin();
-      mine != my_pre.cend(); ++mine)
+    cout << "check for competing needs with " << other_action->get_name() << endl;
+    for(const Proposition_Node* mine : my_preconditions)
     {
-      for(set<Proposition_Node*>::const_iterator other = other_pre.cbegin();
-        other != other_pre.cend(); ++other)
+      for(const Proposition_Node* other : other_preconditions)
       {
-        // if props are same...
-        if((*mine)->instance_of((*other)->get_proposition()))
+        const set<const Proposition_Node*>& mutex = mine->get_mutex();
+        if(mutex.find(other) != mutex.cend())
         {
-          // if props are not both deleted or both present...
-          if((*mine)->is_deleted() != (*other)->is_deleted())
-          {
-            // if they are mutex...
-            const set<Proposition_Node*>& mutex = (*mine)->get_mutex();
-            if(mutex.find(*other) != mutex.cend())
-            {
-              // ...then actions are mutex
-              (*other_action)->add_mutex(an);
-              an->add_mutex(*other_action);
-            }
-          }
+          other_action->add_mutex(an);
+          an->add_mutex(other_action);
+          cout << "\tfound" << endl;
         }
       }
     }
@@ -439,19 +446,14 @@ graphplan::Graphplan::make_proposition_mutex_connections(
   for(set<Proposition_Node*>::iterator prop_1 = new_props.begin();
     prop_1 != new_props.end(); ++prop_1)
   {
-    auto prop_2 = prop_1;
+    set<Proposition_Node*>::iterator prop_2 = prop_1;
     for(++prop_2; prop_2 != new_props.end(); ++prop_2)
     {
-      // if same proposition...
-      if((*prop_1)->instance_of((*prop_2)->get_proposition()))
+      if((*prop_1)->get_proposition().is_negation_of(
+        (*prop_2)->get_proposition()))
       {
-        // if props are different is_deleted...
-        if((*prop_1)->is_deleted() != (*prop_2)->is_deleted())
-        {
-          // ...then props are mutex
-          (*prop_1)->add_mutex(*prop_2);
-          (*prop_2)->add_mutex(*prop_1);
-        }
+        (*prop_1)->add_mutex(*prop_2);
+        (*prop_2)->add_mutex(*prop_1);
       }
     }
   }
@@ -466,33 +468,24 @@ graphplan::Graphplan::make_proposition_mutex_connections(
     set<Proposition_Node*>::iterator prop_2 = prop_1;
     for(++prop_2; prop_2 != new_props.end(); ++prop_2)
     {
-      // get mutual causes
+      // get causes
       const set<Action_Node*>& causes_1 = (*prop_1)->get_cause();
       const set<Action_Node*>& causes_2 = (*prop_2)->get_cause();
-      set<Action_Node*> mutual_causes;
-      for(set<Action_Node*>::const_iterator act_1 = causes_1.cbegin();
-        act_1 != causes_1.cend(); ++act_1)
-      {
-        for(set<Action_Node*>::const_iterator act_2 = causes_2.cbegin();
-          act_2 != causes_2.cend(); ++act_2)
-        {
-          if(*act_1 == *act_2)
-          {
-            mutual_causes.insert(*act_1);
-            break;
-          }
-        }
-      }
+      set<Action_Node*> causes;
+      for(Action_Node* act_1 : causes_1)
+        causes.insert(act_1);
+      for(Action_Node* act_2 : causes_2)
+        causes.insert(act_2);
 
       // check pairwise actions for mutex
-      if(mutual_causes.size() >= 2)
+      if(causes.size() >= 2)
       {
         bool found_pair = false;
-        for(set<Action_Node*>::const_iterator act_1 = mutual_causes.cbegin();
-          act_1 != mutual_causes.cend() && !found_pair; ++act_1)
+        for(set<Action_Node*>::const_iterator act_1 = causes.cbegin();
+          act_1 != causes.cend() && !found_pair; ++act_1)
         {
           set<Action_Node*>::const_iterator act_2 = act_1;
-          for(++act_2; act_2 != mutual_causes.cend() && !found_pair; ++act_2)
+          for(++act_2; act_2 != causes.cend() && !found_pair; ++act_2)
           {
             set<Action_Node*> mutex_set = (*act_1)->get_mutex();
             found_pair = (mutex_set.find(*act_2) == mutex_set.cend());

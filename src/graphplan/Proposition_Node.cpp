@@ -36,14 +36,13 @@
 using std::string;
 using std::set;
 
-graphplan::Proposition_Node::Proposition_Node(const Proposition& p,
-  const bool d) :
-  proposition_(p), deleted_(d)
+graphplan::Proposition_Node::Proposition_Node(const Proposition& p) :
+  proposition_(p)
 {
 }
 
 graphplan::Proposition_Node::Proposition_Node(const Proposition_Node& p) :
-  proposition_(p.proposition_), deleted_(p.deleted_)
+  proposition_(p.proposition_)
 {
 }
 
@@ -60,7 +59,7 @@ graphplan::Proposition_Node::add_cause(Action_Node* a)
 }
 
 void
-graphplan::Proposition_Node::add_mutex(Proposition_Node* p)
+graphplan::Proposition_Node::add_mutex(const Proposition_Node* p)
 {
   mutex_.insert(p);
 }
@@ -89,20 +88,20 @@ graphplan::Proposition_Node::get_cause() const
   return causes_;
 }
 
-const set<graphplan::Proposition_Node*>&
+const set<const graphplan::Proposition_Node*>&
 graphplan::Proposition_Node::get_mutex() const
 {
   return mutex_;
 }
 
 bool
-graphplan::Proposition_Node::is_deleted() const
-{
-  return deleted_;
-}
-
-bool
 graphplan::Proposition_Node::instance_of(const Proposition& p) const
 {
   return proposition_ == p;
+}
+
+string
+graphplan::Proposition_Node::to_string() const
+{
+  return proposition_.to_string();
 }

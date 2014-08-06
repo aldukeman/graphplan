@@ -40,7 +40,7 @@ namespace graphplan
   {
   public:
     /// Constructor
-    Proposition(const std::string& n = "");
+    Proposition(const std::string& n = "", const bool& neg = false);
 
     /// equality operator
     bool operator==(const Proposition& p) const;
@@ -54,12 +54,21 @@ namespace graphplan
     /// get proposition name
     const std::string& get_name() const;
 
+    /// get negated
+    bool is_negated() const;
+
+    /// determine if this is a negation of another proposition
+    bool is_negation_of(const Proposition& p) const;
+
     /// get string version
     std::string to_string() const;
 
   protected:
     /// name of the proposition
     const std::string name_;
+
+    /// is negated
+    const bool negated_;
   }; // class Proposition
 } // namespace graphplan
 

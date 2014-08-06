@@ -32,33 +32,34 @@
 #include "graphplan/Proposition.hpp"
 
 #include <string>
-#include <sstream>
 
-using std::stringstream;
-using std::endl;
 using std::string;
 
-graphplan::Proposition::Proposition(const std::string& n) :
-  name_(n)
+graphplan::Proposition::Proposition(const std::string& n, const bool& neg) :
+  name_(n), negated_(neg)
 {
 }
 
 bool
 graphplan::Proposition::operator==(const Proposition& p) const
 {
-  return name_.compare(p.name_) == 0;
+  return (name_.compare(p.name_) == 0) && (negated_ == p.negated_);
 }
 
 bool
 graphplan::Proposition::operator!=(const Proposition& p) const
 {
-  return name_.compare(p.name_) != 0;
+  return !(this->operator==(p));
 }
 
 bool
 graphplan::Proposition::operator<(const Proposition& p) const
 {
-  return name_ < p.name_;
+  if(name_ < p.name_)
+    return true;
+  if(name_ > p.name_)
+    return false;
+  return !negated_ && p.negated_;
 }
 
 const string&
@@ -67,10 +68,20 @@ graphplan::Proposition::get_name() const
   return name_;
 }
 
+bool
+graphplan::Proposition::is_negated() const
+{
+  return negated_;
+}
+
+bool
+graphplan::Proposition::is_negation_of(const Proposition& p) const
+{
+  return (name_.compare(p.name_) == 0) && (negated_ != p.negated_);
+}
+
 string
 graphplan::Proposition::to_string() const
 {
-  stringstream ret;
-  ret << "Proposition: " << name_ << endl;
-  return ret.str();
+  return name_ + (negated_ ? "_negated" : "");
 }

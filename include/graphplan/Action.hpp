@@ -51,11 +51,8 @@ namespace graphplan
     /// less than operator
     bool operator<(const Action& a) const;
 
-    /// add add
-    void add_add(const Proposition& p);
-
     /// add delete
-    void add_delete(const Proposition& p);
+    void add_effect(const Proposition& p);
 
     /// add precondition
     void add_precondition(const Proposition& p);
@@ -64,10 +61,7 @@ namespace graphplan
     const std::string& get_name() const;
 
     /// get adds
-    const std::set<Proposition>& get_adds() const;
-
-    /// get deletes
-    const std::set<Proposition>& get_deletes() const;
+    const std::set<Proposition>& get_effects() const;
 
     /// get preconditions
     const std::set<Proposition>& get_preconditions() const;
@@ -79,14 +73,11 @@ namespace graphplan
     /// name of the proposition
     std::string name_;
 
+    /// added propositions
+    std::set<Proposition> effects_;
+
     /// required propositions
     std::set<Proposition> preconditions_;
-
-    /// added propositions
-    std::set<Proposition> adds_;
-
-    /// deleted propositions
-    std::set<Proposition> deletes_;
   }; // class Action
 } // namespace graphplan
 

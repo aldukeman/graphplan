@@ -45,86 +45,58 @@ using std::stringstream;
 
 using namespace graphplan;
 
+Proposition p_at_a("x_at_a");
+Proposition p_not_at_a("x_at_a", true);
+Proposition p_at_b("x_at_b");
+Proposition p_not_at_b("x_at_b", true);
+
 void test_proposition()
 {
-  Proposition p_at_a_1("x_at_a");
-  Proposition p_at_a_2("x_at_a");
-  Proposition p_at_a_copy = p_at_a_1;
-  assert(p_at_a_1 == p_at_a_copy);
-  assert(p_at_a_1 == p_at_a_2);
-  assert(p_at_a_1.get_name() == "x_at_a");
-  stringstream expected;
-  expected << "Proposition: x_at_a" << endl;
-  assert(p_at_a_1.to_string() == expected.str());
+  assert(p_at_a == p_at_a);
+  assert(p_at_a != p_not_at_a);
+  assert(p_at_a.is_negation_of(p_not_at_a));
 }
 
 void test_action()
 {
-  Proposition p_at_a("x_at_a");
-  Proposition p_at_b("x_at_b");
   Action a_a_to_b("move_a_to_b");
-  a_a_to_b.add_add(p_at_b);
-  a_a_to_b.add_delete(p_at_a);
   a_a_to_b.add_precondition(p_at_a);
+  a_a_to_b.add_effect(p_at_b);
+  a_a_to_b.add_effect(p_not_at_a);
 
   assert(a_a_to_b.get_name() == "move_a_to_b");
-
-  assert(*(a_a_to_b.get_adds().begin()) == p_at_b);
-  auto it = a_a_to_b.get_adds().begin();
-  ++it;
-  assert(it == a_a_to_b.get_adds().end());
-
-  assert(*(a_a_to_b.get_deletes().begin()) == p_at_a);
-  it = a_a_to_b.get_deletes().begin();
-  ++it;
-  assert(it == a_a_to_b.get_deletes().end());
-
-  assert(*(a_a_to_b.get_preconditions().begin()) == p_at_a);
-  it = a_a_to_b.get_preconditions().begin();
-  ++it;
-  assert(it == a_a_to_b.get_preconditions().end());
 }
 
 void test_proposition_node()
 {
-  Proposition p_at_a("x_at_a");
-  Proposition p_at_b("x_at_b");
-
   Proposition_Node pn_at_a(p_at_a);
   assert(pn_at_a.instance_of(p_at_a));
   assert(!pn_at_a.instance_of(p_at_b));
   assert(pn_at_a.get_name() == "x_at_a");
-  assert(!pn_at_a.is_deleted());
 
-  Proposition_Node pn_at_b(p_at_b, true);
+  Proposition_Node pn_at_b(p_at_b);
   assert(pn_at_b.instance_of(p_at_b));
   assert(!pn_at_b.instance_of(p_at_a));
   assert(pn_at_b.get_name() == "x_at_b");
-  assert(pn_at_b.is_deleted());
 }
 
 void test_action_node()
 {
-  Proposition p_at_a("x_at_a");
-  Proposition p_at_b("x_at_b");
   Action a_a_to_b("move_a_to_b");
-  a_a_to_b.add_add(p_at_b);
-  a_a_to_b.add_delete(p_at_a);
   a_a_to_b.add_precondition(p_at_a);
+  a_a_to_b.add_effect(p_at_b);
+  a_a_to_b.add_effect(p_not_at_a);
 
   Action_Node an_a_to_b(a_a_to_b);
-
   assert(an_a_to_b.is_instance_of(a_a_to_b));
 }
 
 void test_graphplan()
 {
-  Proposition p_at_a("x_at_a");
-  Proposition p_at_b("x_at_b");
   Action a_a_to_b("move_a_to_b");
-  a_a_to_b.add_add(p_at_b);
-  a_a_to_b.add_delete(p_at_a);
   a_a_to_b.add_precondition(p_at_a);
+  a_a_to_b.add_effect(p_at_b);
+  a_a_to_b.add_effect(p_not_at_a);
 
   Graphplan g;
   g.add_starting(p_at_a);
@@ -165,20 +137,50 @@ void test_graphplan()
   Proposition p_at_c("p_at_c");
   test_2.add_goal(p_at_c);
   Action a_b_to_c("move_b_to_c");
-  a_b_to_c.add_add(p_at_c);
-  a_b_to_c.add_delete(p_at_b);
   a_b_to_c.add_precondition(p_at_b);
+  a_b_to_c.add_effect(p_at_c);
+  a_b_to_c.add_effect(p_not_at_b);
   test_2.add_action(a_a_to_b);
   test_2.add_action(a_b_to_c);
   assert(test_2.plan() == 2);
 
-  // print out nodes
-//  cout << "Proposition Nodes" << endl;
-//  for(auto it = test.prop_nodes_.cbegin(); it != test.prop_nodes_.cend(); ++it)
-//    cout << "\t" << (*it)->get_name() << endl;
-//  cout << "Action Nodes" << endl;
-//  for(auto it = test.act_nodes_.cbegin(); it != test.act_nodes_.cend(); ++it)
-//    cout << "\t" << (*it)->get_name() << endl;
+  // birthday dinner example
+  Graphplan birthday;
+  Proposition garb("garb");
+  Proposition not_garb("garb", true);
+  Proposition dinner("dinner");
+  Proposition not_dinner("dinner", true);
+  Proposition present("present");
+  Proposition not_present("present", true);
+  Proposition clean("clean");
+  Proposition not_clean("clean", true);
+  Proposition quiet("quiet");
+  Proposition not_quiet("quiet", true);
+  birthday.add_starting(garb);
+  birthday.add_starting(clean);
+  birthday.add_starting(quiet);
+  birthday.add_goal(not_garb);
+  birthday.add_goal(dinner);
+  birthday.add_goal(present);
+  Action cook("cook");
+  cook.add_precondition(clean);
+  cook.add_effect(dinner);
+  birthday.add_action(cook);
+  Action wrap("wrap");
+  wrap.add_precondition(quiet);
+  wrap.add_effect(present);
+  birthday.add_action(wrap);
+  Action carry("carry");
+  carry.add_precondition(garb);
+  carry.add_effect(not_garb);
+  carry.add_effect(not_clean);
+  birthday.add_action(carry);
+  Action dolly("dolly");
+  dolly.add_precondition(garb);
+  dolly.add_effect(not_garb);
+  dolly.add_effect(not_quiet);
+  birthday.add_action(dolly);
+  cout << birthday.plan(10) << endl;
 }
 
 int main()

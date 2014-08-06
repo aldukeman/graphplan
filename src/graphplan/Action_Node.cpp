@@ -37,29 +37,21 @@
 using std::set;
 using std::string;
 
-graphplan::Action_Node::Action_Node(const Action& a,
-  set<Proposition_Node*> pre, set<Proposition_Node*> add,
-  set<Proposition_Node*> del, set<Action_Node*> mutex) :
-  action_(a), preconditions_(pre), adds_(add), deletes_(del), mutex_(mutex)
+graphplan::Action_Node::Action_Node(const Action& a) :
+  action_(a)
 {
 }
 
 void
-graphplan::Action_Node::add_precondition(Proposition_Node* p)
+graphplan::Action_Node::add_precondition(const Proposition_Node* p)
 {
   preconditions_.insert(p);
 }
 
 void
-graphplan::Action_Node::add_add(Proposition_Node* p)
+graphplan::Action_Node::add_effect(Proposition_Node* p)
 {
-  adds_.insert(p);
-}
-
-void
-graphplan::Action_Node::add_delete(Proposition_Node* p)
-{
-  deletes_.insert(p);
+  effects_.insert(p);
 }
 
 void
@@ -74,22 +66,16 @@ graphplan::Action_Node::get_action() const
   return action_;
 }
 
-const set<graphplan::Proposition_Node*>&
+const set<const graphplan::Proposition_Node*>&
 graphplan::Action_Node::get_preconditions() const
 {
   return preconditions_;
 }
 
 const set<graphplan::Proposition_Node*>&
-graphplan::Action_Node::get_adds() const
+graphplan::Action_Node::get_effects() const
 {
-  return adds_;
-}
-
-const set<graphplan::Proposition_Node*>&
-graphplan::Action_Node::get_deletes() const
-{
-  return deletes_;
+  return effects_;
 }
 
 const set<graphplan::Action_Node*>&

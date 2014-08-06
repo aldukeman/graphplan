@@ -44,35 +44,25 @@ namespace graphplan
   {
   public:
     /// Constructor
-    Action_Node(const Action& n,
-      std::set<Proposition_Node*> pre = std::set<Proposition_Node*>(),
-      std::set<Proposition_Node*> add = std::set<Proposition_Node*>(),
-      std::set<Proposition_Node*> del = std::set<Proposition_Node*>(),
-      std::set<Action_Node*> mutex = std::set<Action_Node*>());
+    Action_Node(const Action& n);
 
     /// get base action
     const Action& get_action() const;
 
     /// get precondition list
-    void add_precondition(Proposition_Node* p);
+    void add_precondition(const Proposition_Node* p);
 
     /// get add list
-    void add_add(Proposition_Node* p);
-
-    /// get delete list
-    void add_delete(Proposition_Node* p);
+    void add_effect(Proposition_Node* p);
 
     /// get mutex list
     void add_mutex(Action_Node* a);
 
     /// get precondition list
-    const std::set<Proposition_Node*>& get_preconditions() const;
+    const std::set<const Proposition_Node*>& get_preconditions() const;
 
-    /// get add list
-    const std::set<Proposition_Node*>& get_adds() const;
-
-    /// get delete list
-    const std::set<Proposition_Node*>& get_deletes() const;
+    /// get effects
+    const std::set<Proposition_Node*>& get_effects() const;
 
     /// get mutex list
     const std::set<Action_Node*>& get_mutex() const;
@@ -88,13 +78,10 @@ namespace graphplan
     const Action action_;
 
     /// preconditions
-    std::set<Proposition_Node*> preconditions_;
+    std::set<const Proposition_Node*> preconditions_;
 
     /// results
-    std::set<Proposition_Node*> adds_;
-
-    /// results
-    std::set<Proposition_Node*> deletes_;
+    std::set<Proposition_Node*> effects_;
 
     /// mutex
     std::set<Action_Node*> mutex_;

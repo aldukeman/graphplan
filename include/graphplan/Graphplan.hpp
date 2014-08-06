@@ -53,6 +53,8 @@ namespace graphplan
     bool del;
   };
 
+  typedef Goal Starting; // alias goal for starting conditions
+
   class Graphplan
   {
   public:
@@ -63,7 +65,7 @@ namespace graphplan
     ~Graphplan();
 
     /// add starting propositions
-    void add_starting(const Proposition& p);
+    void add_starting(const Proposition& p, const bool& deleted = false);
 
     /// add goal propositions
     void add_goal(const Proposition& p, const bool& deleted = false);
@@ -72,7 +74,7 @@ namespace graphplan
     void add_action(const Action& a);
 
     /// get starting propositions
-    const std::set<Proposition>& get_starting() const;
+    const std::set<Starting>& get_starting() const;
 
     /// get available actions
     const std::set<Action>& get_actions() const;
@@ -87,9 +89,10 @@ namespace graphplan
     std::string to_string() const;
 
     /// check for goal state
-    bool goal_check(const std::set<Proposition_Node*>& props) const;
+    bool goal_check(const std::set<Proposition_Node*>& props,
+      std::set<Action_Node*>& actions) const;
 
-  //protected:
+  protected:
     /// perform an action step
     void iteration(const std::set<Proposition_Node*>& props, 
       std::set<Proposition_Node*>& new_props, 
@@ -99,12 +102,8 @@ namespace graphplan
     void connect_preconditions(const std::set<Proposition_Node*>& found_precond,
       Action_Node* an);
 
-    /// connect added nodes, create if necessary
-    void connect_added_nodes(const Action& action, 
-      std::set<Proposition_Node*>& new_props, Action_Node* an);
-
-    /// connect deleted nodes, create if necessary
-    void connect_deleted_nodes(const Action& action, 
+    /// connect effect nodes, create if necessary
+    void connect_effect_nodes(const Action& action, 
       std::set<Proposition_Node*>& new_props, Action_Node* an);
 
     /// make mutex connections for actions
@@ -118,7 +117,7 @@ namespace graphplan
     static bool is_mutex(const std::set<Proposition_Node*> props);
 
     /// starting propositions
-    std::set<Proposition> starting_;
+    std::set<Starting> starting_;
 
     /// goal propositions
     std::set<Goal> goals_;
