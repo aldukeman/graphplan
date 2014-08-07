@@ -184,6 +184,27 @@ void test_graphplan()
   dolly.add_effect(not_quiet);
   birthday.add_action(dolly);
   assert(birthday.plan(10) == 2);
+
+  // have cake and eat it too example
+  Graphplan cake;
+  Proposition have_cake("have_cake");
+  Proposition not_have_cake("have_cake", true);
+  Proposition eaten_cake("eaten_cake");
+  Proposition not_eaten_cake("eaten_cake", true);
+  Action eat_cake("eat_cake");
+  eat_cake.add_precondition(have_cake);
+  eat_cake.add_effect(not_have_cake);
+  eat_cake.add_effect(eaten_cake);
+  Action bake_cake("bake_cake");
+  bake_cake.add_precondition(not_have_cake);
+  bake_cake.add_effect(have_cake);
+  cake.add_starting(have_cake);
+  cake.add_starting(not_eaten_cake);
+  cake.add_goal(have_cake);
+  cake.add_goal(eaten_cake);
+  cake.add_action(eat_cake);
+  cake.add_action(bake_cake);
+  assert(cake.plan(5) == 2);
 }
 
 int main()
