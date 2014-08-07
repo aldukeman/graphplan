@@ -285,7 +285,15 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
   if(!(is_mutex(found_goals)))
   {
     map<const Proposition_Node*, Action_Node*> prop_causes;
-    return level_goal_check(found_goals, prop_causes);
+    if(level_goal_check(found_goals, prop_causes))
+    {
+      for(auto pc : prop_causes)
+      {
+        cout << pc.first->to_string() << " caused by " << 
+          pc.second->get_action().get_name() << endl;
+      }
+      return true;
+    }
   }
 
   return false;
@@ -502,7 +510,7 @@ graphplan::Graphplan::make_proposition_mutex_connections(
 
 bool
 graphplan::Graphplan::level_goal_check(const set<Proposition_Node*>& props,
-  map<const Proposition_Node*, Action_Node*> /*prop_causes*/)
+  map<const Proposition_Node*, Action_Node*>& prop_causes)
 {
   // check if we are at level 0
   set<Proposition_Node*>::const_iterator p = props.cbegin();
@@ -511,13 +519,19 @@ graphplan::Graphplan::level_goal_check(const set<Proposition_Node*>& props,
 
   // recursively call sub_level_goal_check
   map<const Proposition_Node*, Action_Node*> causes;
-  return sub_level_goal_check(props, props.cbegin(), causes);
+  if(sub_level_goal_check(props, props.cbegin(), causes))
+  {
+    for(auto pc : causes)
+      prop_causes[pc.first] = pc.second;
+    return true;
+  }
+  return false;
 }
 
 bool
 graphplan::Graphplan::sub_level_goal_check(const set<Proposition_Node*>& props,
   set<Proposition_Node*>::const_iterator cur,
-  map<const Proposition_Node*, Action_Node*> prop_causes)
+  map<const Proposition_Node*, Action_Node*>& prop_causes)
 {
   // check if done recursing in this function
   if(cur == props.cend())
@@ -527,7 +541,13 @@ graphplan::Graphplan::sub_level_goal_check(const set<Proposition_Node*>& props,
       for(Proposition_Node* cause : prop_causes[p]->get_preconditions())
         new_props.insert(cause);
     map<const Proposition_Node*, Action_Node*> new_prop_causes;
-    return level_goal_check(new_props, new_prop_causes);
+    if(level_goal_check(new_props, new_prop_causes))
+    {
+      for(auto pc : new_prop_causes)
+        prop_causes[pc.first] = pc.second;
+      return true;
+    }
+    return false;
   }
 
   // find action for next proposition
