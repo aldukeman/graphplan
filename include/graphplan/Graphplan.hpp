@@ -84,14 +84,14 @@ namespace graphplan
     const std::set<Goal>& get_goals() const;
 
     /// find plan
-    unsigned int plan(unsigned int iterations = 5);
+    unsigned int plan(unsigned int iterations = 5, bool print = false);
 
     /// get string representation
     std::string to_string() const;
 
     /// check for goal state
     bool goal_check(const std::set<Proposition_Node*>& props,
-      std::set<Action_Node*>& actions) const;
+      std::map<const Proposition_Node*, Action_Node*>& actions) const;
 
   protected:
     /// perform an action step

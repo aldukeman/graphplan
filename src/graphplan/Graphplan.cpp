@@ -34,6 +34,7 @@
 #include <sstream>
 #include <iostream>
 #include <queue>
+#include <stack>
 
 #include "graphplan/Proposition.hpp"
 #include "graphplan/Action.hpp"
@@ -46,6 +47,7 @@ using std::endl;
 using std::set;
 using std::queue;
 using std::map;
+using std::stack;
 
 graphplan::Goal::Goal(const Proposition& p, const bool& d) :
   prop(p), del(d)
@@ -106,10 +108,9 @@ graphplan::Graphplan::get_goals() const
 }
 
 unsigned int
-graphplan::Graphplan::plan(unsigned int iterations)
+graphplan::Graphplan::plan(unsigned int iterations, bool print)
 {
   // init proposition nodes
-  cout << "Initial nodes:" << endl;
   set<Proposition_Node*> props;
   for(set<Starting>::iterator it = starting_.cbegin(); it != starting_.cend();
     ++it)
@@ -117,15 +118,17 @@ graphplan::Graphplan::plan(unsigned int iterations)
     Proposition_Node* p = new Proposition_Node(it->prop);
     prop_nodes_.insert(p);
     props.insert(p);
-    cout << "\t" << p->to_string() << endl;
   }
 
   // while not at goal, perform another iteration
   unsigned int iter;
-  set<Action_Node*> actions;
-  for(iter = 0; iter < iterations && !goal_check(props, actions); ++iter)
+  map<const Proposition_Node*, Action_Node*> actions;
+  bool goal = false;
+  for(iter = 0; iter < iterations; ++iter)
   {
-    cout << "iteration: " << iter << endl;
+    goal = goal_check(props, actions);
+    if(goal)
+      break;
 
     set<Proposition_Node*> new_props;
     set<Action_Node*> new_acts;
@@ -146,6 +149,53 @@ graphplan::Graphplan::plan(unsigned int iterations)
     }
 
     props.swap(new_props);
+  }
+
+  if(goal)
+  {
+    stack<Action_Node*> action_sequence;
+    set<Proposition_Node*> preconditions;
+    auto p = props.cbegin();
+    while((*p)->get_causes().size() != 0)
+    {
+      set<Action_Node*> cur;
+      for(Proposition_Node* q : props)
+      {
+        if(cur.find(actions[q]) == cur.cend())
+        {
+          cur.insert(actions[q]);
+          action_sequence.push(actions[q]);
+          if(actions[q] != 0)
+          {
+            for(auto r : actions[q]->get_preconditions())
+              preconditions.insert(r);
+          }
+        }
+      }
+
+      action_sequence.push(0); // mark ending of this step
+      props.swap(preconditions);
+      p = props.cbegin();
+    }
+
+    // print out results if requested
+    if(print)
+    {
+      unsigned int stage = 0;
+      while(action_sequence.size() > 1)
+      {
+        Action_Node* cur = action_sequence.top();
+        if(cur == 0)
+          cout << "step " << ++stage << endl;
+        else
+        {
+          string output = cur->get_action().get_name();
+          if(output.find("maintenance") == std::string::npos)
+            cout << "\t" << cur->get_action().get_name() << endl;
+        }
+        action_sequence.pop();
+      }
+    }
   }
 
   return iter;
@@ -207,8 +257,6 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
   for(set<Action>::const_iterator action = actions_.cbegin();
     action != actions_.cend(); ++action)
   {
-    cout << "checking action " << action->get_name() << endl;
-
     // foreach precondition
     const set<Proposition>& preconds = action->get_preconditions();
     bool good = true;
@@ -230,7 +278,6 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
     // if all preconditions are present and not mutex
     if(good && !(is_mutex(found_precond)))
     {
-      cout << "\tadding action" << endl;
       // create action node and add result nodes
       Action_Node* an = new Action_Node(*action);
       connect_preconditions(found_precond, an);
@@ -242,23 +289,11 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
   }
 
   make_proposition_mutex_connections(new_props);
-
-  cout << "propositions:" << endl;
-  for(auto it = new_props.cbegin(); it != new_props.cend(); ++it)
-  {
-    cout << "\t" << (*it)->to_string() << endl;
-    auto mutex = (*it)->get_mutex();
-    cout << "\t\tmutex:" << endl;
-    for(auto mut = mutex.cbegin(); mut != mutex.cend(); ++mut)
-    {
-      cout << "\t\t\t" << (*mut)->to_string() << endl;
-    }
-  }
 }
 
 bool
 graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
-  set<Action_Node*>& /*actions*/) const
+  map<const Proposition_Node*, Action_Node*>& actions) const
 {
   // foreach goal proposition
   set<Proposition_Node*> found_goals;
@@ -287,11 +322,7 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
     map<const Proposition_Node*, Action_Node*> prop_causes;
     if(level_goal_check(found_goals, prop_causes))
     {
-      for(auto pc : prop_causes)
-      {
-        cout << pc.first->to_string() << " caused by " << 
-          pc.second->get_action().get_name() << endl;
-      }
+      actions.swap(prop_causes);
       return true;
     }
   }
@@ -377,7 +408,6 @@ graphplan::Graphplan::make_action_mutex_connections(
      * case 1: inconsistent effects - an action adds a proposition effect
      *         that another action deletes or is negation of
      */
-    cout << "check for inconsistent effects with " << other_action->get_name() << endl;
     for(const Proposition_Node* mine : my_effects)
     {
       for(const Proposition_Node* other : other_effects)
@@ -386,7 +416,6 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
-          cout << "\tfound" << endl;
         }
       }
     }
@@ -395,7 +424,6 @@ graphplan::Graphplan::make_action_mutex_connections(
      * case 2: interference - an action deletes a preconditon that another 
      *         action needs
      */
-    cout << "check for interference with " << other_action->get_name() << endl;
     for(const Proposition_Node* mine : my_preconditions)
     {
       for(const Proposition_Node* other : other_effects)
@@ -404,7 +432,6 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
-          cout << "\tfound" << endl;
         }
       }
     }
@@ -416,7 +443,6 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
-          cout << "\tfound" << endl;
         }
       }
     }
@@ -425,7 +451,6 @@ graphplan::Graphplan::make_action_mutex_connections(
      * case 3: competing needs - an action has preconditions that are mutex with
      *         another actions preconditions
      */
-    cout << "check for competing needs with " << other_action->get_name() << endl;
     for(const Proposition_Node* mine : my_preconditions)
     {
       for(const Proposition_Node* other : other_preconditions)
@@ -435,7 +460,6 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
-          cout << "\tfound" << endl;
         }
       }
     }

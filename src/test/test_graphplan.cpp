@@ -32,6 +32,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <map>
 
 #include "graphplan/Graphplan.hpp"
 #include "graphplan/Action.hpp"
@@ -42,6 +43,7 @@ using std::endl;
 using std::set;
 using std::string;
 using std::stringstream;
+using std::map;
 
 using namespace graphplan;
 
@@ -106,7 +108,7 @@ void test_graphplan()
   set<Proposition_Node*> props;
 
   // case 1: not goal
-  set<Action_Node*> actions;
+  map<const Proposition_Node*, Action_Node*> actions;
   assert(!g.goal_check(props, actions));
 
   // case 2: has goal
@@ -181,7 +183,7 @@ void test_graphplan()
   dolly.add_effect(not_garb);
   dolly.add_effect(not_quiet);
   birthday.add_action(dolly);
-  cout << birthday.plan(10) << endl;
+  assert(birthday.plan(10) == 2);
 }
 
 int main()
