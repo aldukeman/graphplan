@@ -43,7 +43,7 @@ graphplan::Action_Node::Action_Node(const Action& a) :
 }
 
 void
-graphplan::Action_Node::add_precondition(const Proposition_Node* p)
+graphplan::Action_Node::add_precondition(Proposition_Node* p)
 {
   preconditions_.insert(p);
 }
@@ -66,7 +66,7 @@ graphplan::Action_Node::get_action() const
   return action_;
 }
 
-const set<const graphplan::Proposition_Node*>&
+const set<graphplan::Proposition_Node*>&
 graphplan::Action_Node::get_preconditions() const
 {
   return preconditions_;

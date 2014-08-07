@@ -83,7 +83,7 @@ graphplan::Proposition_Node::get_supply() const
 }
 
 const set<graphplan::Action_Node*>&
-graphplan::Proposition_Node::get_cause() const
+graphplan::Proposition_Node::get_causes() const
 {
   return causes_;
 }

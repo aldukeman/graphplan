@@ -45,6 +45,7 @@ using std::stringstream;
 using std::endl;
 using std::set;
 using std::queue;
+using std::map;
 
 graphplan::Goal::Goal(const Proposition& p, const bool& d) :
   prop(p), del(d)
@@ -257,7 +258,7 @@ graphplan::Graphplan::iteration(const set<Proposition_Node*>& props,
 
 bool
 graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
-  set<Action_Node*>& actions) const
+  set<Action_Node*>& /*actions*/) const
 {
   // foreach goal proposition
   set<Proposition_Node*> found_goals;
@@ -283,10 +284,8 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
   // ensure no mutex
   if(!(is_mutex(found_goals)))
   {
-    // produce queue of proposition nodes to find actions for
-    queue<Proposition_Node*> sub_goals;
-    for(Proposition_Node* p : found_goals)
-      sub_goals.push(p);
+    map<const Proposition_Node*, Action_Node*> prop_causes;
+    return level_goal_check(found_goals, prop_causes);
   }
 
   return false;
@@ -362,10 +361,9 @@ graphplan::Graphplan::make_action_mutex_connections(
   for(Action_Node* other_action : new_actions)
   {
     const set<Proposition_Node*>& my_effects = an->get_effects();
-    const set<const Proposition_Node*>& my_preconditions =
-      an->get_preconditions();
+    const set<Proposition_Node*>& my_preconditions = an->get_preconditions();
     const set<Proposition_Node*>& other_effects = other_action->get_effects();
-    const set<const Proposition_Node*>& other_preconditions = 
+    const set<Proposition_Node*>& other_preconditions = 
       other_action->get_preconditions();
     /**
      * case 1: inconsistent effects - an action adds a proposition effect
@@ -469,8 +467,8 @@ graphplan::Graphplan::make_proposition_mutex_connections(
     for(++prop_2; prop_2 != new_props.end(); ++prop_2)
     {
       // get causes
-      const set<Action_Node*>& causes_1 = (*prop_1)->get_cause();
-      const set<Action_Node*>& causes_2 = (*prop_2)->get_cause();
+      const set<Action_Node*>& causes_1 = (*prop_1)->get_causes();
+      const set<Action_Node*>& causes_2 = (*prop_2)->get_causes();
       set<Action_Node*> causes;
       for(Action_Node* act_1 : causes_1)
         causes.insert(act_1);
@@ -500,4 +498,65 @@ graphplan::Graphplan::make_proposition_mutex_connections(
       }
     }
   }
+}
+
+bool
+graphplan::Graphplan::level_goal_check(const set<Proposition_Node*>& props,
+  map<const Proposition_Node*, Action_Node*> /*prop_causes*/)
+{
+  // check if we are at level 0
+  set<Proposition_Node*>::const_iterator p = props.cbegin();
+  if((*p)->get_causes().size() == 0)
+    return true;
+
+  // recursively call sub_level_goal_check
+  map<const Proposition_Node*, Action_Node*> causes;
+  return sub_level_goal_check(props, props.cbegin(), causes);
+}
+
+bool
+graphplan::Graphplan::sub_level_goal_check(const set<Proposition_Node*>& props,
+  set<Proposition_Node*>::const_iterator cur,
+  map<const Proposition_Node*, Action_Node*> prop_causes)
+{
+  // check if done recursing in this function
+  if(cur == props.cend())
+  {
+    set<Proposition_Node*> new_props;
+    for(const Proposition_Node* p : props)
+      for(Proposition_Node* cause : prop_causes[p]->get_preconditions())
+        new_props.insert(cause);
+    map<const Proposition_Node*, Action_Node*> new_prop_causes;
+    return level_goal_check(new_props, new_prop_causes);
+  }
+
+  // find action for next proposition
+  for(Action_Node* act : (*cur)->get_causes())
+  {
+    // check if it's mutex with other already selected actions
+    set<Action_Node*> mutex_actions = act->get_mutex();
+    bool mutex = false;
+    for(Proposition_Node* p : props)
+    {
+      if(mutex_actions.find(prop_causes[p]) != mutex_actions.cend())
+      {
+        mutex = true;
+        break;
+      }
+    }
+
+    if(!mutex)
+    {
+      prop_causes[*cur] = act;
+      auto next = cur;
+      ++next;
+      if(sub_level_goal_check(props, next, prop_causes))
+      {
+        return true;
+      }
+      prop_causes[*cur] = 0;
+    }
+  }
+
+  return false;
 }

@@ -106,23 +106,24 @@ void test_graphplan()
   set<Proposition_Node*> props;
 
   // case 1: not goal
-  assert(!g.goal_check(props));
+  set<Action_Node*> actions;
+  assert(!g.goal_check(props, actions));
 
   // case 2: has goal
   Proposition_Node pn_at_b(p_at_b);
   props.insert(&pn_at_b);
-  assert(g.goal_check(props));
+  assert(g.goal_check(props, actions));
 
   // case 3: has more than goal
   Proposition_Node pn_at_a(p_at_a);
   props.insert(&pn_at_a);
-  assert(g.goal_check(props));
+  assert(g.goal_check(props, actions));
 
   // case 4: mutex between them
   pn_at_a.add_mutex(&pn_at_b);
   pn_at_b.add_mutex(&pn_at_a);
   g.add_goal(p_at_a);
-  assert(!g.goal_check(props));
+  assert(!g.goal_check(props, actions));
 
   // attempt a plan
   Graphplan test;

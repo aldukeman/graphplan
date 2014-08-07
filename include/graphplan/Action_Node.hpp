@@ -50,7 +50,7 @@ namespace graphplan
     const Action& get_action() const;
 
     /// get precondition list
-    void add_precondition(const Proposition_Node* p);
+    void add_precondition(Proposition_Node* p);
 
     /// get add list
     void add_effect(Proposition_Node* p);
@@ -59,7 +59,7 @@ namespace graphplan
     void add_mutex(Action_Node* a);
 
     /// get precondition list
-    const std::set<const Proposition_Node*>& get_preconditions() const;
+    const std::set<Proposition_Node*>& get_preconditions() const;
 
     /// get effects
     const std::set<Proposition_Node*>& get_effects() const;
@@ -78,7 +78,7 @@ namespace graphplan
     const Action action_;
 
     /// preconditions
-    std::set<const Proposition_Node*> preconditions_;
+    std::set<Proposition_Node*> preconditions_;
 
     /// results
     std::set<Proposition_Node*> effects_;

@@ -69,7 +69,7 @@ namespace graphplan
     const std::set<Action_Node*>& get_supply() const;
 
     /// get action nodes this is an effect of
-    const std::set<Action_Node*>& get_cause() const;
+    const std::set<Action_Node*>& get_causes() const;
 
     /// get proposition nodes this node is mutex with
     const std::set<const Proposition_Node*>& get_mutex() const;

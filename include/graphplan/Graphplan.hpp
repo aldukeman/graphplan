@@ -34,6 +34,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 
 #include "graphplan/Proposition.hpp"
 #include "graphplan/Proposition_Node.hpp"
@@ -115,6 +116,15 @@ namespace graphplan
 
     /// check for no mutex in set
     static bool is_mutex(const std::set<Proposition_Node*> props);
+
+    /// check if level is good
+    static bool level_goal_check(const std::set<Proposition_Node*>& props,
+      std::map<const Proposition_Node*, Action_Node*> prop_causes);
+
+    /// recursively select cause for effects
+    static bool sub_level_goal_check(const std::set<Proposition_Node*>& props,
+      std::set<Proposition_Node*>::const_iterator cur,
+      std::map<const Proposition_Node*, Action_Node*> prop_causes);
 
     /// starting propositions
     std::set<Starting> starting_;
