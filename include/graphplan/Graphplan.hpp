@@ -43,19 +43,6 @@
 
 namespace graphplan
 {
-  /// goal type
-  struct Goal
-  {
-    Goal(const Proposition& p, const bool& d);
-
-    bool operator<(const Goal& g) const;
-
-    Proposition prop;
-    bool del;
-  };
-
-  typedef Goal Starting; // alias goal for starting conditions
-
   class Graphplan
   {
   public:
@@ -66,22 +53,22 @@ namespace graphplan
     ~Graphplan();
 
     /// add starting propositions
-    void add_starting(const Proposition& p, const bool& deleted = false);
+    void add_starting(const Proposition& p);
 
     /// add goal propositions
-    void add_goal(const Proposition& p, const bool& deleted = false);
+    void add_goal(const Proposition& p);
 
     /// add possible action
     void add_action(const Action& a);
 
     /// get starting propositions
-    const std::set<Starting>& get_starting() const;
+    const std::set<Proposition>& get_starting() const;
 
     /// get available actions
     const std::set<Action>& get_actions() const;
 
     /// get goals
-    const std::set<Goal>& get_goals() const;
+    const std::set<Proposition>& get_goals() const;
 
     /// find plan
     unsigned int plan(unsigned int iterations = 5, bool print = false);
@@ -127,10 +114,10 @@ namespace graphplan
       std::map<const Proposition_Node*, Action_Node*>& prop_causes);
 
     /// starting propositions
-    std::set<Starting> starting_;
+    std::set<Proposition> starting_;
 
     /// goal propositions
-    std::set<Goal> goals_;
+    std::set<Proposition> goals_;
 
     /// available actions
     std::set<Action> actions_;

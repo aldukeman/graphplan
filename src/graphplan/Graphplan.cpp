@@ -49,16 +49,6 @@ using std::queue;
 using std::map;
 using std::stack;
 
-graphplan::Goal::Goal(const Proposition& p, const bool& d) :
-  prop(p), del(d)
-{
-}
-
-bool graphplan::Goal::operator<(const Goal& g) const
-{
-  return prop < g.prop;
-}
-
 graphplan::Graphplan::Graphplan()
 {
 }
@@ -72,15 +62,15 @@ graphplan::Graphplan::~Graphplan()
 }
 
 void
-graphplan::Graphplan::add_starting(const Proposition& p, const bool& deleted)
+graphplan::Graphplan::add_starting(const Proposition& p)
 {
-  starting_.insert(Starting(p, deleted));
+  starting_.insert(p);
 }
 
 void
-graphplan::Graphplan::add_goal(const Proposition& p, const bool& deleted)
+graphplan::Graphplan::add_goal(const Proposition& p)
 {
-  goals_.insert(Goal(p, deleted));
+  goals_.insert(p);
 }
 
 void
@@ -89,7 +79,7 @@ graphplan::Graphplan::add_action(const Action& a)
   actions_.insert(a);
 }
 
-const set<graphplan::Starting>&
+const set<graphplan::Proposition>&
 graphplan::Graphplan::get_starting() const
 {
   return starting_;
@@ -101,7 +91,7 @@ graphplan::Graphplan::get_actions() const
   return actions_;
 }
 
-const set<graphplan::Goal>&
+const set<graphplan::Proposition>&
 graphplan::Graphplan::get_goals() const
 {
   return goals_;
@@ -112,10 +102,10 @@ graphplan::Graphplan::plan(unsigned int iterations, bool print)
 {
   // init proposition nodes
   set<Proposition_Node*> props;
-  for(set<Starting>::iterator it = starting_.cbegin(); it != starting_.cend();
+  for(set<Proposition>::iterator it = starting_.cbegin(); it != starting_.cend();
     ++it)
   {
-    Proposition_Node* p = new Proposition_Node(it->prop);
+    Proposition_Node* p = new Proposition_Node(*it);
     prop_nodes_.insert(p);
     props.insert(p);
   }
@@ -207,11 +197,17 @@ graphplan::Graphplan::to_string() const
   stringstream ret;
   ret << "Starting Propositions:" << endl;
   for(auto it = starting_.cbegin(); it != starting_.cend(); ++it)
-    ret << "\t" << it->prop.get_name() << (it->del ? " deleted" : "") << endl;
+  {
+    ret << "\t" << it->get_name() << (it->is_negated() ? " _negated" : "") 
+      << endl;
+  }
 
   ret << "Goal Propositions:" << endl;
   for(auto it = goals_.cbegin(); it != goals_.cend(); ++it)
-    ret << "\t" << it->prop.get_name() << (it->del ? " deleted" : "") << endl;
+  {
+    ret << "\t" << it->get_name() << (it->is_negated() ? "_negated" : "") 
+      << endl;
+  }
 
   ret << "Actions:" << endl;
   for(auto it = actions_.cbegin(); it != actions_.cend(); ++it)
@@ -297,14 +293,14 @@ graphplan::Graphplan::goal_check(const set<Proposition_Node*>& props,
 {
   // foreach goal proposition
   set<Proposition_Node*> found_goals;
-  for(set<Goal>::const_iterator goal = goals_.cbegin(); goal != goals_.cend();
+  for(set<Proposition>::const_iterator goal = goals_.cbegin(); goal != goals_.cend();
     ++goal)
   {
     // search for goal in propositions
     set<Proposition_Node*>::const_iterator it;
     for(it = props.cbegin(); it != props.cend(); ++it)
     {
-      if((*it)->instance_of(goal->prop))
+      if((*it)->instance_of(*goal))
         break;
     }
 
