@@ -1,0 +1,14 @@
+INIT: garb clean quiet
+GOAL: !garb dinner present
+ACTION: cook
+  PRE: clean
+  EFFECTS: dinner
+ACTION: wrap
+  PRE: quiet
+  EFFECTS: present
+ACTION: carry
+  PRE: garb
+  EFFECTS: !garb !clean
+ACTION: dolly
+  PRE: garb
+  EFFECTS: !garb !quiet

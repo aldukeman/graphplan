@@ -60,15 +60,21 @@ namespace graphplan
     /// determine if this is a negation of another proposition
     bool is_negation_of(const Proposition& p) const;
 
+    /// set negated status
+    void set_negated(const bool& n = true);
+
+    /// set name
+    void set_name(const std::string& n);
+
     /// get string version
     std::string to_string() const;
 
   protected:
     /// name of the proposition
-    const std::string name_;
+    std::string name_;
 
     /// is negated
-    const bool negated_;
+    bool negated_;
   }; // class Proposition
 } // namespace graphplan
 

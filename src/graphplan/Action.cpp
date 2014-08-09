@@ -100,3 +100,9 @@ graphplan::Action::to_string() const
 
   return ret.str();
 }
+
+void
+graphplan::Action::set_name(const std::string& n)
+{
+  name_ = n;
+}

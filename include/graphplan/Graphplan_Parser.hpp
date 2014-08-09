@@ -34,6 +34,8 @@
 #define _GRAPHPLAN_GRAPHPLAN_PARSER_H_
 
 #include <string>
+#include <iostream>
+#include <fstream>
 
 #include "graphplan/Graphplan.hpp"
 
@@ -79,6 +81,13 @@ namespace graphplan
       std::string text;
     };
 
+    /// error output
+    bool error(const Token_Type& expected) const;
+
+    /// error output
+    bool error(const std::string& expected) const;
+
+    /// parse graphplan pattern
     bool parse_graphplan(Graphplan& g);
 
     /// parse action pattern
@@ -101,8 +110,8 @@ namespace graphplan
 
     /// scanner members
     int line_;
-    ifstream in_file_;
-    istream* is_;
+    std::ifstream in_file_;
+    std::istream* is_;
     char next_;
     bool backup_;
     int count_;

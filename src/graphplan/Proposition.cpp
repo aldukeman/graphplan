@@ -80,6 +80,18 @@ graphplan::Proposition::is_negation_of(const Proposition& p) const
   return (name_.compare(p.name_) == 0) && (negated_ != p.negated_);
 }
 
+void
+graphplan::Proposition::set_negated(const bool& n)
+{
+  negated_ = n;
+}
+
+void
+graphplan::Proposition::set_name(const std::string& n)
+{
+  name_ = n;
+}
+
 string
 graphplan::Proposition::to_string() const
 {

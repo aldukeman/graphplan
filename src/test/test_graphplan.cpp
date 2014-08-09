@@ -35,6 +35,7 @@
 #include <map>
 
 #include "graphplan/Graphplan.hpp"
+#include "graphplan/Graphplan_Parser.hpp"
 #include "graphplan/Action.hpp"
 #include "graphplan/Proposition.hpp"
 
@@ -184,6 +185,12 @@ void test_graphplan()
   dolly.add_effect(not_quiet);
   birthday.add_action(dolly);
   assert(birthday.plan(10) == 2);
+
+  // test parser with previous problem
+  Graphplan_Parser gp;
+  Graphplan birthday_text;
+  assert(gp.parse_file("tests/Graphplan_Parser.txt", birthday_text));
+  assert(birthday_text.plan(10) == 2);
 
   // have cake and eat it too example
   Graphplan cake;

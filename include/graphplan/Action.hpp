@@ -69,6 +69,9 @@ namespace graphplan
     /// get string version
     std::string to_string() const;
 
+    /// set action name
+    void set_name(const std::string& n);
+
   protected:
     /// name of the proposition
     std::string name_;
