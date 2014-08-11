@@ -98,7 +98,7 @@ graphplan::Graphplan::get_goals() const
 }
 
 unsigned int
-graphplan::Graphplan::plan(unsigned int iterations, bool print)
+graphplan::Graphplan::plan(unsigned int iterations, Partial_Order_Plan* plan)
 {
   // init proposition nodes
   set<Proposition_Node*> props;
@@ -169,20 +169,16 @@ graphplan::Graphplan::plan(unsigned int iterations, bool print)
     }
 
     // print out results if requested
-    if(print)
+    if(plan != 0)
     {
       unsigned int stage = 0;
       while(action_sequence.size() > 1)
       {
         Action_Node* cur = action_sequence.top();
         if(cur == 0)
-          cout << "step " << ++stage << endl;
-        else
-        {
-          string output = cur->get_action().get_name();
-          if(output.find("maintenance") == std::string::npos)
-            cout << "\t" << cur->get_action().get_name() << endl;
-        }
+          ++stage;
+        else if(!(cur->get_action().is_maintenance_action()))
+          plan->add_action(stage - 1, cur->get_action());
         action_sequence.pop();
       }
     }

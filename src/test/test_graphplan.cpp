@@ -94,6 +94,26 @@ void test_action_node()
   assert(an_a_to_b.is_instance_of(a_a_to_b));
 }
 
+void test_partial_order_plan()
+{
+  Partial_Order_Plan plan;
+  Action a_a_to_b("move_a_to_b");
+  a_a_to_b.add_precondition(p_at_a);
+  a_a_to_b.add_effect(p_at_b);
+  a_a_to_b.add_effect(p_not_at_a);
+  Action a_b_to_c("move_b_to_c");
+  plan.add_action(0, a_a_to_b);
+  plan.add_action(0, a_b_to_c);
+  plan.add_action(1, a_a_to_b);
+  stringstream expected;
+  expected << "Stage 0" << endl;
+  expected << "\tmove_a_to_b" << endl;
+  expected << "\tmove_b_to_c" << endl;
+  expected << "Stage 1" << endl;
+  expected << "\tmove_a_to_b" << endl;
+  assert(plan.to_string() == expected.str());
+}
+
 void test_graphplan()
 {
   Action a_a_to_b("move_a_to_b");
@@ -211,7 +231,8 @@ void test_graphplan()
   cake.add_goal(eaten_cake);
   cake.add_action(eat_cake);
   cake.add_action(bake_cake);
-  assert(cake.plan(5) == 2);
+  Partial_Order_Plan p;
+  assert(cake.plan(5, &p) == 2);
 }
 
 int main()
@@ -220,6 +241,7 @@ int main()
   test_action();
   test_proposition_node();
   test_action_node();
+  test_partial_order_plan();
   test_graphplan();
 
   return 0;

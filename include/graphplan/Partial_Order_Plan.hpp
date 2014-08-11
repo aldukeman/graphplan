@@ -23,68 +23,44 @@
  */
 
 /**
- * @file Action.hpp
+ * @file Partial_Order_Plan.hpp
  * @author Anton Dukeman <anton.dukeman@gmail.com>
  *
- * An Action in Graphplan
+ * The Partial_Order_Plan class stores a partially ordered plan.
  */
 
-#ifndef _GRAPHPLAN_ACTION_H_
-#define _GRAPHPLAN_ACTION_H_
+#ifndef _GRAPHPLAN_PARTIAL_ORDER_PLAN_H_
+#define _GRAPHPLAN_PARTIAL_ORDER_PLAN_H_
 
-#include <string>
+#include <vector>
 #include <set>
 
-#include "graphplan/Proposition.hpp"
+#include "graphplan/Action.hpp"
 
 namespace graphplan
 {
-  class Action
+  class Partial_Order_Plan
   {
   public:
     /// Constructor
-    Action(const std::string& n = "");
+    Partial_Order_Plan();
 
-    /// equality operator
-    bool operator==(const Action& a) const;
+    /// add action at stage
+    void add_action(const unsigned int& stage, const Action& a);
 
-    /// less than operator
-    bool operator<(const Action& a) const;
+    /// get actions at all stages
+    const std::vector<std::set<Action> >& get_actions() const;
 
-    /// add delete
-    void add_effect(const Proposition& p);
+    /// get actions at a specific stage
+    const std::set<Action>& get_actions(unsigned int stage) const;
 
-    /// add precondition
-    void add_precondition(const Proposition& p);
-
-    /// get proposition name
-    const std::string& get_name() const;
-
-    /// get adds
-    const std::set<Proposition>& get_effects() const;
-
-    /// get preconditions
-    const std::set<Proposition>& get_preconditions() const;
-
-    /// check if this is a maintenance action
-    bool is_maintenance_action() const;
-
-    /// get string version
+    /// get string representation
     std::string to_string() const;
 
-    /// set action name
-    void set_name(const std::string& n);
-
   protected:
-    /// name of the proposition
-    std::string name_;
-
-    /// added propositions
-    std::set<Proposition> effects_;
-
-    /// required propositions
-    std::set<Proposition> preconditions_;
-  }; // class Action
+    /// actions in this plan
+    std::vector<std::set<Action> > actions_;
+  }; // class Partial_Order_Plan
 } // namespace graphplan
 
-#endif // _GRAPHPLAN_ACTION_H_
+#endif // _GRAPHPLAN_PARTIAL_ORDER_PLAN_H_

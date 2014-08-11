@@ -23,92 +23,60 @@
  */
 
 /**
- * @file Action.cpp
+ * @file Partial_Order_Plan.cpp
  * @author Anton Dukeman <anton.dukeman@gmail.com>
- *
- * An Action in Graphplan
  */
 
-#include "graphplan/Action.hpp"
+#include "graphplan/Partial_Order_Plan.hpp"
 
 #include <sstream>
+#include <iostream>
 
 using std::stringstream;
-using std::endl;
-using std::string;
 using std::set;
+using std::vector;
+using std::cout;
+using std::endl;
 
-graphplan::Action::Action(const string& n) : name_(n)
+graphplan::Partial_Order_Plan::Partial_Order_Plan()
 {
-}
-
-bool
-graphplan::Action::operator==(const Action& a) const
-{
-  return name_ == a.name_;
-}
-
-bool
-graphplan::Action::operator<(const Action& a) const
-{
-  return name_ < a.name_;
+  actions_.resize(0);
 }
 
 void
-graphplan::Action::add_effect(const Proposition& p)
+graphplan::Partial_Order_Plan::add_action(const unsigned int& stage,
+  const Action& a)
 {
-  effects_.insert(p);
+  if(actions_.size() <= stage)
+    actions_.resize(stage + 1);
+  actions_[stage].insert(a);
 }
 
-void
-graphplan::Action::add_precondition(const Proposition& p)
+const std::vector<std::set<graphplan::Action> >&
+graphplan::Partial_Order_Plan::get_actions() const
 {
-  preconditions_.insert(p);
+  return actions_;
 }
 
-const string&
-graphplan::Action::get_name() const
+const std::set<graphplan::Action>&
+graphplan::Partial_Order_Plan::get_actions(unsigned int stage) const
 {
-  return name_;
+  return actions_[stage];
 }
 
-const set<graphplan::Proposition>&
-graphplan::Action::get_effects() const
-{
-  return effects_;
-}
-
-const set<graphplan::Proposition>&
-graphplan::Action::get_preconditions() const
-{
-  return preconditions_;
-}
-
-bool
-graphplan::Action::is_maintenance_action() const
-{
-  return name_.find("maintenance") != std::string::npos;
-}
-
-string
-graphplan::Action::to_string() const
+std::string
+graphplan::Partial_Order_Plan::to_string() const
 {
   stringstream ret;
-  ret << "Action: " << name_ << endl;
-
-  ret << "\tPreconditions:" << endl;
-  for(const Proposition& pre : preconditions_)
-    ret << "\t\t" << pre.to_string() << endl;
-
-  ret << "\tEffects:" << endl;
-  for(const Proposition& effect : effects_)
-    ret << "\t\t" << effect.to_string() << endl;
+  unsigned int stage = 0;
+  for(auto it = actions_.cbegin(); it != actions_.cend(); ++it)
+  {
+    ret << "Stage " << stage++ << endl;
+    for(const Action a : *it)
+    {
+      ret << "\t" << a.get_name() << endl;
+    }
+  }
 
   return ret.str();
-}
-
-void
-graphplan::Action::set_name(const std::string& n)
-{
-  name_ = n;
 }

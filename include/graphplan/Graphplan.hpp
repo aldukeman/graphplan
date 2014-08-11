@@ -40,6 +40,7 @@
 #include "graphplan/Proposition_Node.hpp"
 #include "graphplan/Action.hpp"
 #include "graphplan/Action_Node.hpp"
+#include "graphplan/Partial_Order_Plan.hpp"
 
 namespace graphplan
 {
@@ -71,7 +72,8 @@ namespace graphplan
     const std::set<Proposition>& get_goals() const;
 
     /// find plan
-    unsigned int plan(unsigned int iterations = 5, bool print = false);
+    unsigned int plan(unsigned int iterations = 5,
+      Partial_Order_Plan* plan = 0);
 
     /// get string representation
     std::string to_string() const;

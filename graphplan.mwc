@@ -4,6 +4,7 @@ workspace {
   cmdline += -value_template compile_flags+=-Wall
   cmdline += -value_template compile_flags+=-Wextra
   cmdline += -value_template compile_flags+=-pedantic
+  cmdline += -value_template compile_flags+=-ggdb
   cmdline += -value_template ldlibs=""
 
   graphplan.mpc
