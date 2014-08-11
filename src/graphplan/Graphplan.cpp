@@ -396,6 +396,7 @@ graphplan::Graphplan::make_action_mutex_connections(
     const set<Proposition_Node*>& other_effects = other_action->get_effects();
     const set<Proposition_Node*>& other_preconditions = 
       other_action->get_preconditions();
+    bool is_mutex = false;
     /**
      * case 1: inconsistent effects - an action adds a proposition effect
      *         that another action deletes or is negation of
@@ -408,9 +409,12 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
+          is_mutex = true;
         }
       }
     }
+    if(is_mutex)
+      continue;
 
     /**
      * case 2: interference - an action deletes a preconditon that another 
@@ -424,6 +428,7 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
+          is_mutex = true;
         }
       }
     }
@@ -435,9 +440,12 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
+          is_mutex = true;
         }
       }
     }
+    if(is_mutex)
+      continue;
 
     /**
      * case 3: competing needs - an action has preconditions that are mutex with
@@ -452,9 +460,12 @@ graphplan::Graphplan::make_action_mutex_connections(
         {
           other_action->add_mutex(an);
           an->add_mutex(other_action);
+          is_mutex = true;
         }
       }
     }
+    if(is_mutex)
+      continue;
   }
 }
 
@@ -462,34 +473,27 @@ void
 graphplan::Graphplan::make_proposition_mutex_connections(
   set<Proposition_Node*>& new_props)
 {
-  /**
-   * case 1: propositions are mutex if they are negations of each other
-   */
   for(set<Proposition_Node*>::iterator prop_1 = new_props.begin();
     prop_1 != new_props.end(); ++prop_1)
   {
     set<Proposition_Node*>::iterator prop_2 = prop_1;
     for(++prop_2; prop_2 != new_props.end(); ++prop_2)
     {
+      /**
+       * case 1: propositions are mutex if they are negations of each other
+       */
       if((*prop_1)->get_proposition().is_negation_of(
         (*prop_2)->get_proposition()))
       {
         (*prop_1)->add_mutex(*prop_2);
         (*prop_2)->add_mutex(*prop_1);
+        continue;
       }
-    }
-  }
 
-  /**
-   * case 2: all actions that could have created the proposition are pairwise
-   *         mutex
-   */
-  for(set<Proposition_Node*>::iterator prop_1 = new_props.begin();
-    prop_1 != new_props.end(); ++prop_1)
-  {
-    set<Proposition_Node*>::iterator prop_2 = prop_1;
-    for(++prop_2; prop_2 != new_props.end(); ++prop_2)
-    {
+      /**
+       * case 2: all actions that could have created the proposition are pairwise
+       *         mutex
+       */
       // get causes
       const set<Action_Node*>& causes_1 = (*prop_1)->get_causes();
       const set<Action_Node*>& causes_2 = (*prop_2)->get_causes();
